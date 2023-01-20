@@ -1,0 +1,22 @@
+{
+  "name": "trpc-multithreading-1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx src"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tsx": "^3.12.2",
+    "@trpc/server": "^10.9.0",
+    "@trpc/client": "^10.9.0",
+    "superjson": "^1.12.2"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.4",
+    "@types/node": "^18.11.18"
+  }
+}
