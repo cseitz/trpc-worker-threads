@@ -33,7 +33,7 @@ export class TypedChannel<TRouter extends AnyRouter> {
 
 
 export class MessagePortChannel<TRouter extends AnyRouter> extends TypedChannel<TRouter> {
-    constructor(public messagePort: MessagePort | null) {
+    constructor(public messagePort: MessagePort) {
         super();
         this.subscribe();
     }
@@ -71,7 +71,7 @@ export class MessagePortChannel<TRouter extends AnyRouter> extends TypedChannel<
             }
         }
         this.messagePort.on('message', callback)
-        return () => this.messagePort?.off('message', callback);
+        return () => this.messagePort.off('message', callback);
     }
 
     handleRequests({ router, transformer, context }: TIPCHandlerOptions<any>) {
@@ -85,10 +85,10 @@ export class MessagePortChannel<TRouter extends AnyRouter> extends TypedChannel<
                 }
                 router.createCaller(context || op.context)[op.type](op.path, op.input)
                     .then(result => {
-                        this.messagePort!.postMessage(RESULT + `${op.id}:` + JSON.stringify(transformer.serialize({ ...rop, result })))
+                        this.messagePort.postMessage(RESULT + `${op.id}:` + JSON.stringify(transformer.serialize({ ...rop, result })))
                     })
                     .catch(error => {
-                        this.messagePort!.postMessage(RESULT + `${op.id}:` + JSON.stringify(transformer.serialize({ ...rop, error })))
+                        this.messagePort.postMessage(RESULT + `${op.id}:` + JSON.stringify(transformer.serialize({ ...rop, error })))
                     })
             }
         })
@@ -96,8 +96,7 @@ export class MessagePortChannel<TRouter extends AnyRouter> extends TypedChannel<
 
     post(runtime: TRPCClientRuntime, op: Operation<any>) {
         const { CALL } = this.constants();
-        // console.log('post da msg', op)
-        this.messagePort?.postMessage(CALL + JSON.stringify(runtime.transformer.serialize(op)))
+        this.messagePort.postMessage(CALL + JSON.stringify(runtime.transformer.serialize(op)))
     }
 
 }
