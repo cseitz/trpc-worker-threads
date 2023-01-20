@@ -14,7 +14,7 @@ import SuperJSON from 'superjson'
 
 
 const t = initTRPC.context<{
-    worker?: string
+    worker?: Worker
 }>().create({
     transformer: SuperJSON,
 })
@@ -42,10 +42,13 @@ function spawnWorker() {
     const channel = new WorkerChannel<WorkerRouter>(worker);
 
     // Listen for calls to the main thread
-    registerTIPCHandler({
+    registerTIPCHandler<MainRouter>({
         transformer: SuperJSON,
         router: mainRouter,
         channel,
+        context: {
+            worker,
+        }
     })
 
     // Allow us to call procedures on the worker

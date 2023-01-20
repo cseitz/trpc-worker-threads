@@ -1,5 +1,5 @@
 import { CreateTRPCClientOptions, Operation, TRPCClientRuntime, TRPCLink, createTRPCProxyClient } from '@trpc/client';
-import { AnyRouter, DataTransformer } from '@trpc/server';
+import { AnyRouter, DataTransformer, inferRouterContext } from '@trpc/server';
 import { observable } from '@trpc/server/observable';
 import type { MessagePort, Worker } from 'worker_threads'
 
@@ -26,7 +26,7 @@ export class TypedChannel<TRouter extends AnyRouter> {
         });
     }
 
-    handleRequests(router: AnyRouter, transformer: any) {
+    handleRequests(opts: TIPCHandlerOptions<any>) {
         throw new Error('Not Implemented');
     }
 }
@@ -74,7 +74,7 @@ export class MessagePortChannel<TRouter extends AnyRouter> extends TypedChannel<
         return () => this.messagePort?.off('message', callback);
     }
 
-    handleRequests(router: AnyRouter, transformer: DataTransformer) {
+    handleRequests({ router, transformer, context }: TIPCHandlerOptions<any>) {
         const { CALL, RESULT } = this.constants();
         this.messagePort!.on('message', (msg: string) => {
             if (typeof msg === 'string' && msg.startsWith(CALL)) {
@@ -83,7 +83,7 @@ export class MessagePortChannel<TRouter extends AnyRouter> extends TypedChannel<
                 const rop = {
                     id: op.id,
                 }
-                router.createCaller(op.context)[op.type](op.path, op.input)
+                router.createCaller(context || op.context)[op.type](op.path, op.input)
                     .then(result => {
                         this.messagePort!.postMessage(RESULT + `${op.id}:` + JSON.stringify(transformer.serialize({ ...rop, result })))
                     })
@@ -163,12 +163,13 @@ export function createTIPCProxyClient<TOptions extends TIPCClientOptions<TRouter
 }
 
 type TIPCHandlerOptions<TRouter extends AnyRouter> = Omit<CreateTRPCClientOptions<TRouter>, 'links'> & {
-    channel: TypedChannel<TRouter>,
+    channel: TypedChannel<TRouter | any>,
     router: TRouter | any,
+    context?: inferRouterContext<TRouter>,
 }
 
 export function registerTIPCHandler<TRouter extends AnyRouter>(opts: TIPCHandlerOptions<TRouter>) {
-    opts.channel.handleRequests(opts.router, opts.transformer);
+    opts.channel.handleRequests(opts);
 }
 
 
